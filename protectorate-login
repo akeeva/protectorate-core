@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+source "$(dirname "${BASH_SOURCE[0]}")/lib/bootstrap.sh"
+source "${PROTECTORATE_ROOT}/lib/ui.sh"
+source "${PROTECTORATE_ROOT}/lib/banner.sh"
+source "${PROTECTORATE_ROOT}/lib/system.sh"
+source "${PROTECTORATE_ROOT}/lib/config.sh"
+source "${PROTECTORATE_ROOT}/lib/prompt.sh"
+
+clear
+
+banner_main
+
+ui_section "Project"
+ui_item "Name"         "$PROJECT_NAME"
+ui_item "Organization" "$ORGANIZATION"
+ui_item "Division"     "$DIVISION"
+ui_item "Project Version" "$PROJECT_VERSION"
+printf "\n"
+
+system_summary
+
+printf "\n"
