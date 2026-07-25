@@ -37,3 +37,5 @@ _protectorate_prompt() {
 
     PS1="${UI_BRIGHT_MAGENTA}♦ ${UI_BRIGHT_WHITE}\u@\h ${UI_GRAY}\w ${arrow_color}>${UI_RESET} "
 }
+
+PROMPT_COMMAND=_protectorate_prompt
