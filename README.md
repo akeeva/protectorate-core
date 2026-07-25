@@ -66,24 +66,23 @@ remaining transparent and administrator-controlled.
 
 ```text
 .
-├── assets/
-├── bin/
-├── config/
-├── docs/
-├── lib/
-├── logos/
-├── motd/
-├── scripts/
-├── templates/
-└── tests/
+├── assets/     Images, ANSI art, and static resources
+├── bin/        User-facing executables
+├── docs/       Project Documentation
+├── lib/        Source-only framework modules
+├── logos/      Project logos, .png, .svg, etc
+├── motd/       MOTD-related scripts
+├── scripts/    Peripheral scripts (currently unused)
+├── templates/  Templates used for creation of new project files
+└── tests/      Scripts used for testing
 ```
 
 Each directory has a single responsibility.
 
 Shared functionality belongs in reusable libraries.
 
-Executable scripts should remain thin wrappers around those
-libraries whenever practical.
+Executables in bin/ should remain thin wrappers around the framework
+provided by lib/shell-init.sh and the shared library modules.
 
 ---
 

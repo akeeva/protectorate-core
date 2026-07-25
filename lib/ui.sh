@@ -67,7 +67,7 @@ readonly UI_BRIGHT_WHITE="\033[1;37m"
 # Protectorate Prompt Colors
 #------------------------------------------------------------------------------
 
-readonly UI_PROMPT_USER_SUCCESS="${UI_BRIGHT_CYAN}"
+readonly UI_PROMPT_USER_SUCCESS="${UI_BRIGHT_BLUE}"
 readonly UI_PROMPT_USER_FAILURE="${UI_BRIGHT_RED}"
 
 readonly UI_PROMPT_ROOT_SUCCESS="${UI_BRIGHT_YELLOW}"
@@ -82,32 +82,13 @@ readonly UI_LINE_LIGHT="──────────────────�
 
 # Generates the Protectorate UI header & sections
 
-ui_header() {
-    printf "%b%s%b\n" "${UI_BRIGHT_BLUE}" "$UI_LINE_HEAVY" "${UI_RESET}"
-    printf "%b🛡  THE PROTECTORATE%b\n" "$UI_BRIGHT_BLUE" "${UI_RESET}"
-    printf "%bInfrastructure Division%b\n" "$UI_GRAY" "${UI_RESET}"
-    printf "%b%s%b\n" "${UI_BRIGHT_BLUE}" "$UI_LINE_HEAVY" "${UI_RESET}"
-}
-
 ui_section() {
-    printf "%b%s%b\n" "${UI_BRIGHT_CYAN}" "$1" "${UI_RESET}"
+    printf "%b%s%b\n" "${UI_BRIGHT_MAGENTA}" "$1" "${UI_RESET}"
     printf "%b%s%b\n" "${UI_GRAY}" "$UI_LINE_LIGHT" "${UI_RESET}"
 }
 
 ui_item() {
     printf "%-18s %s\n" "$1" "$2"
-}
-
-# Displays the Protectorate MOTD header.
-
-ui_motd_header() {
-    ui_header
-
-    ui_item "Node" "$NODE_NAME"
-    ui_item "Version" "$PROJECT_VERSION"
-    ui_item "Codename" "$PROJECT_CODENAME"
-
-    printf "\n"
 }
 
 ui_label() {

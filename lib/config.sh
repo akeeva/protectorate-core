@@ -5,6 +5,10 @@
 # Version: 0.1.0
 #
 
+readonly ASSETS_DIR="${PROTECTORATE_ROOT}/assets"
+
+export ASSETS_DIR
+
 PROJECT_NAME="Protectorate Core"
 PROJECT_VERSION="0.1.0"
 PROJECT_CODENAME="Foundation"

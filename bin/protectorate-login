@@ -2,12 +2,7 @@
 
 set -euo pipefail
 
-source "$(dirname "${BASH_SOURCE[0]}")/lib/bootstrap.sh"
-source "${PROTECTORATE_ROOT}/lib/ui.sh"
-source "${PROTECTORATE_ROOT}/lib/banner.sh"
-source "${PROTECTORATE_ROOT}/lib/system.sh"
-source "${PROTECTORATE_ROOT}/lib/config.sh"
-source "${PROTECTORATE_ROOT}/lib/prompt.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/shell-init.sh"
 
 clear
 

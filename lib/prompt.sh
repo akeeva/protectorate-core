@@ -35,5 +35,5 @@ _protectorate_prompt() {
         fi
     fi
 
-    PS1="${UI_BRIGHT_CYAN}♦ ${UI_BRIGHT_WHITE}\h ${UI_GRAY}\w ${arrow_color}>${UI_RESET} "
+    PS1="${UI_BRIGHT_MAGENTA}♦ ${UI_BRIGHT_WHITE}\u@\h ${UI_GRAY}\w ${arrow_color}>${UI_RESET} "
 }
