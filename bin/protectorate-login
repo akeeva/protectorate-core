@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/shell-init.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/bootstrap.sh"
 
 clear
 

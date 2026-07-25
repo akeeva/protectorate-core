@@ -82,3 +82,19 @@ Build the Protectorate ecosystem.
 - Protectorate Update
 
 Status: Future
+
+### Future Objective: Error Handling Module
+
+Introduce a centralized error/reporting module to provide
+consistent diagnostics across Protectorate Core.
+
+Potential responsibilities:
+- Standardized error formatting
+- Warning messages
+- Informational messages
+- Fatal error handling
+- Optional verbosity levels
+- Exit code helpers
+
+Status:
+- Deferred until multiple modules duplicate error handling.

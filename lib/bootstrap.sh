@@ -2,7 +2,7 @@
 #
 # -----------------------------------------------------------------------------
 # Protectorate Core
-# Module: shell-init.sh
+# Module: bootstrap.sh
 #
 # Description:
 #   Initializes the Protectorate Core shell environment.
@@ -18,7 +18,6 @@
 # Constants
 #==============================================================================
 
-readonly PROTECTORATE_SHELL_INIT_VERSION="0.1.0"
 
 [[ -n "${PROTECTORATE_INITIALIZED:-}" ]] && return 0
 readonly PROTECTORATE_INITIALIZED=1
@@ -27,6 +26,8 @@ readonly PROTECTORATE_ROOT="$(
     cd "$(dirname "${BASH_SOURCE[0]}")/.." >/dev/null 2>&1 &&
     pwd
 )"
+
+readonly PROTECTORATE_SHELL_INIT_VERSION="0.1.0"
 
 export PROTECTORATE_ROOT
 

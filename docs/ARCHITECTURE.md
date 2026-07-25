@@ -1,9 +1,9 @@
 # Architecture
 
-Protectorate Core is built as a collection of small, focused modules.
+Protectorate Core is developed as a portable source tree.
 
-Every component has a single responsibility and should remain
-independent whenever practical.
+Installation is the process of transforming the source tree
+into the target system's runtime layout.
 
 ---
 
@@ -27,7 +27,7 @@ independent whenever practical.
       bin/protectorate-login
                     │
                     ▼
-          lib/shell-init.sh
+          lib/bootstrap.sh
                     │
                     ▼
              Discover Project Root
@@ -93,15 +93,15 @@ Each module should assume the framework has already been initialized.
 
 Protectorate Core initializes in the following order:
 
-1. An executable in `/bin` sources `lib/shell-init.sh`.
-2. `shell-init.sh` discovers and exports `PROTECTORATE_ROOT`.
+1. An executable in `/bin` sources `lib/bootstrap.sh`.
+2. `bootstrap.sh` discovers and exports `PROTECTORATE_ROOT`.
 3. `config.sh` is loaded to establish project-wide configuration.
 4. Remaining framework modules are loaded.
 5. Control returns to the executable.
 
 ## Shell Initialization
 
-`shell-init.sh` is the entry point for Protectorate Core.
+`bootstrap.sh` is the entry point for Protectorate Core.
 
 Its responsibilities are:
 

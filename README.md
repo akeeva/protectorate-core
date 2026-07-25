@@ -82,7 +82,7 @@ Each directory has a single responsibility.
 Shared functionality belongs in reusable libraries.
 
 Executables in bin/ should remain thin wrappers around the framework
-provided by lib/shell-init.sh and the shared library modules.
+provided by lib/bootstrap.sh and the shared library modules.
 
 ---
 
