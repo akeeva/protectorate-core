@@ -103,13 +103,10 @@ install_framework() {
 install_profile_loader() {
     info "Installing login shell integration..."
 
-    cat > "$PROFILE_LOADER" <<EOF
-#!/usr/bin/env bash
-$SHELL_LOADER
-EOF
-
-    chmod 644 "$PROFILE_LOADER"
-
+    install -m 0644 \
+        "assets/config/protectorate.sh" \
+        "$PROFILE_LOADER"
+        
     success "Installed $PROFILE_LOADER."
 }
 
