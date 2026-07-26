@@ -77,7 +77,7 @@ verify_repository() {
         if [[ -e "$file" ]]; then
             success "$file"
         else
-            warn "$file (optional"
+            warn "$file (optional)"
         fi
     done
 

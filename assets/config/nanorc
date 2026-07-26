@@ -1,12 +1,27 @@
-root = true
+## --- ProtectorateOS Foundation Nano Configuration ---
 
-[*]
-charset = utf-8
-end_of_line = lf
-insert_final_newline = true
-trim_trailing_whitespace = true
-indent_style = space
-indent_size = 4
+## Display
+set linenumbers
+set indicator
+set constantshow
+set stateflags
+set minibar
 
-[*.md]
-trim_trailing_whitespace = false
+## Editing
+set tabsize 4
+set tabstospaces
+set autoindent
+set smarthome
+set trimblanks
+
+## Searching
+set casesensitive
+
+## UX
+set historylog
+
+## Backups
+set locking
+
+## Syntax highlighting
+include "/usr/share/nano/*.nanorc"
