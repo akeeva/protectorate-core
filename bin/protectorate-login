@@ -17,4 +17,9 @@ printf "\n"
 
 system_summary
 
+if declare -F health_summary >/dev/null; then
+    printf "\n"
+    health_summary
+fi
+
 printf "\n"

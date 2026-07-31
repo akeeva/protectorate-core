@@ -54,6 +54,12 @@ _load_module() {
 # Performs shell initialization.
 #
 _initialize() {
+    local component_config="${PROTECTORATE_ROOT}/config/components.conf"
+
+    if [[ -r "$component_config" ]]; then
+        source "$component_config"
+    fi
+
     local modules=(
         config
         ui
@@ -61,6 +67,10 @@ _initialize() {
         system
         prompt
     )
+
+    if [[ "${PROTECTORATE_HEALTH_DISPLAY:-disabled}" == "enabled" ]]; then
+        modules+=(health)
+    fi
 
     local module
 
