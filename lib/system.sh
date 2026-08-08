@@ -5,11 +5,12 @@
 # Module: system.sh
 #
 # Description:
-#   Creates the system summary to display upon login
+#   Collects system information for the Protectorate login summary.
 #
 # Responsibilities:
-#   - Gather System Data
-#   - Render Data
+#   - Collect operating system and host information.
+#   - Collect basic system resource information.
+#   - Provide formatted values for the system summary.
 # -----------------------------------------------------------------------------
 
 #==============================================================================
@@ -19,33 +20,56 @@
 #==============================================================================
 # Private Functions
 #==============================================================================
-_system_hostname(){
+
+##
+# Returns the system hostname.
+#
+_system_hostname() {
     hostname
     }
 
-_system_kernel(){
+##
+# Returns the running kernel release.
+#
+_system_kernel() {
     uname -r
 }
 
+##
+# Returns the operating system's human-readable name.
+#
 _system_os() {
     . /etc/os-release
-    echo "${PRETTY_NAME}"
+    printf '%s\n' "$PRETTY_NAME"
 }
 
+##
+# Returns the system uptime in a human-readable format.
+#
 _system_uptime() {
     uptime -p | sed 's/^up //'
 }
 
+##
+# Returns the model name of the first detected CPU.
+#
 _system_cpu() {
     grep -m1 'model name' /proc/cpuinfo | cut -d: -f2- | xargs
 }
 
+##
+# Returns current and total system memory in human-readable units.
+#
 _system_memory() {
     free -h | awk '/^Mem:/ {print $3 " / " $2}'
 }
 
+##
+# Returns the source IP address used for the default network path.
+#
 _system_ip() {
-    ip route get 1.1.1.1 2>/dev/null | awk '/src/ {print $7; exit}'
+    ip route get 1.1.1.1 2>/dev/null | 
+        awk '/src/ {print $7; exit}'
 }
 
 #==============================================================================
@@ -53,9 +77,14 @@ _system_ip() {
 #==============================================================================
 
 ##
-# Description...
+# Displays the Protectorate system summary.
 #
-
+# Output:
+#   Writes formatted system information to standard output.
+#
+# Returns:
+#   The status of the final UI rendering operation.
+#
 system_summary() {
     ui_section "System"
     ui_label "Hostname:" "$(_system_hostname)"
