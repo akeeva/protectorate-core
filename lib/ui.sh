@@ -5,13 +5,13 @@
 # Module: ui.sh
 #
 # Description:
-#   User interface functions for terminal interaction.
+#   Provides shared terminal user interface primitives and color definitions.
 #
 # Responsibilities:
-#   - ANSI color definitions
-#   - Formatted output
-#   - Headers and banners
-#   - User prompts
+#   - Define ANSI color constants.
+#   - Define prompt color constants.
+#   - Define shared terminal separators.
+#   - Render reusable terminal UI elements.
 # -----------------------------------------------------------------------------
 
 #==============================================================================
@@ -80,17 +80,48 @@ readonly UI_PROMPT_ROOT_FAILURE="${UI_BRIGHT_MAGENTA}"
 readonly UI_LINE_HEAVY="════════════════════════════════════════════════════"
 readonly UI_LINE_LIGHT="────────────────────────────────────────────────────"
 
-# Generates the Protectorate UI header & sections
+#==============================================================================
+# Public Functions
+#==============================================================================
 
+##
+# Displays a titled UI section with a separator line.
+#
+# Arguments:
+#   $1 - Section title.
+#
+# Output:
+#   Writes the formatted section header to standard output.
+#
 ui_section() {
     printf "%b%s%b\n" "${UI_BRIGHT_MAGENTA}" "$1" "${UI_RESET}"
     printf "%b%s%b\n" "${UI_GRAY}" "$UI_LINE_LIGHT" "${UI_RESET}"
 }
 
+##
+# Displays a UI item using the standard item label width.
+#
+# Arguments:
+#   $1 - Item label.
+#   $2 - Item value.
+#
+# Output:
+#   Writes the formatted item to standard output.
+#
 ui_item() {
     printf "%-18s %s\n" "$1" "$2"
 }
 
+##
+# Displays a compact UI label and value pair.
+#
+# Arguments:
+#   $1 - Label.
+#   $2 - Value.
+#
+# Output:
+#   Writes the formatted label and value to standard output.
+#
 ui_label() {
     printf "%-10s %s\n" "$1" "$2"
 }
