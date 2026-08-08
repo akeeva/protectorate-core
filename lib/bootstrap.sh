@@ -8,16 +8,15 @@
 #   Initializes the Protectorate Core shell environment.
 #
 # Responsibilities:
-#   - Discover the project root.
-#   - Validate the installation.
-#   - Load library modules.
-#   # Initialize loaded modules. (Temporarily Disabled)
+#   - Discover the Protectorate installation root.
+#   - Validate the installation structure.
+#   - Load required library modules.
+#   - Load optional components when enabled.
 # -----------------------------------------------------------------------------
 
 #==============================================================================
 # Constants
 #==============================================================================
-
 
 [[ -n "${PROTECTORATE_INITIALIZED:-}" ]] && return 0
 readonly PROTECTORATE_INITIALIZED=1
@@ -36,7 +35,17 @@ export PROTECTORATE_ROOT
 #==============================================================================
 
 ##
-# Loads a library module.
+# Loads a Protectorate library module.
+#
+# Arguments:
+#   $1 - Module name without the .sh extension.
+#
+# Returns:
+#   0 when the module is loaded successfully.
+#   Non-zero if the module file does not exist or cannot be sourced.
+#
+# Side Effects:
+#   Sources the requested module into the current shell.
 #
 _load_module() {
     local module="$1"
@@ -51,7 +60,18 @@ _load_module() {
 }
 
 ##
-# Performs shell initialization.
+# Loads the configured Protectorate Core modules.
+#
+# Reads the optional component configuration, builds the module load list,
+# and loads each enabled module in dependency order.
+#
+# Returns:
+#   0 when all enabled modules are loaded successfully.
+#   Non-zero if a module cannot be loaded.
+#
+# Side Effects:
+#   May source the component configuration file.
+#   Sources each enabled Protectorate module.
 #
 _initialize() {
     local component_config="${PROTECTORATE_ROOT}/config/components.conf"
@@ -77,11 +97,6 @@ _initialize() {
     for module in "${modules[@]}"; do
         _load_module "${module}"
     done
-
-#    for module in "${modules[@]}"; do
-#        "${module}_initialize"
-#    done
-
 }
 
 #==============================================================================
@@ -89,7 +104,14 @@ _initialize() {
 #==============================================================================
 
 ##
-# Initializes Protectorate Core
+# Initializes Protectorate Core.
+#
+# Verifies the installation structure before loading the configured
+# Protectorate modules.
+#
+# Returns:
+#   0 on successful initialization.
+#   Non-zero if the installation is invalid or initialization fails.
 #
 shell_initialize() {
     if [[ ! -d "${PROTECTORATE_ROOT}/lib" ]]; then
@@ -100,4 +122,5 @@ shell_initialize() {
     _initialize
 }
 
+# Initialize Protectorate Core when the bootstrap module is sourced.
 shell_initialize
