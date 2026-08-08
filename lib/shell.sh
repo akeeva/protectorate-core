@@ -34,6 +34,13 @@ readonly _PROTECTORATE_BOOTSTRAP
 # Private Functions
 #==============================================================================
 
+##
+# Reports whether the Protectorate shell framework is already initialized.
+#
+# Returns:
+#   0 if the shell framework has already been initialized.
+#   Non-zero otherwise.
+#
 _shell_initialized() {
     [[ -n "${PROTECTORATE_SHELL_LOADED:-}" ]]
 }
@@ -43,7 +50,18 @@ _shell_initialized() {
 #==============================================================================
 
 ##
-# Initialize the Protectorate shell framework.
+# Initializes the Protectorate shell framework.
+#
+# Loads the bootstrap module once and marks the shell framework initialized.
+# Repeated calls return successfully without performing initialization again.
+#
+# Returns:
+#   0 on success or when already initialized.
+#   Non-zero if the bootstrap module cannot be found or loaded.
+#
+# Side Effects:
+#   Sources the Protectorate bootstrap module.
+#   Defines PROTECTORATE_SHELL_LOADED as a readonly global.
 #
 protectorate_shell_init() {
     if _shell_initialized; then
@@ -62,4 +80,5 @@ protectorate_shell_init() {
     readonly PROTECTORATE_SHELL_LOADED=1
 }
 
+# Initialize the framework when this entry-point module is sourced.
 protectorate_shell_init
