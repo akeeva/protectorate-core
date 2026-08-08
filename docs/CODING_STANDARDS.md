@@ -116,6 +116,39 @@ Avoid duplicated information.
 
 Document architecture rather than implementation.
 
+
+### Function Documentation
+
+Every public function shall have a documentation block immediately
+above its definition.
+
+Non-trivial private functions shall also be documented. Private
+functions are considered non-trivial when they implement policy,
+parsing, validation, state management, fallback behavior, error
+handling, or other behavior that is not obvious from the function
+name and implementation.
+
+Public function documentation should describe, where applicable:
+
+- Purpose.
+- Arguments.
+- Output.
+- Return status.
+- Side effects.
+- Important policy or behavioral constraints.
+
+Private function documentation should describe:
+
+- Purpose.
+- Arguments when they are not obvious.
+- Important behavior or implementation policy.
+
+Comments should explain intent, constraints, or decisions rather than
+simply restating the code.
+
+Documentation is part of the implementation. Comments that become
+inaccurate when behavior changes shall be updated with the code.
+
 ---
 
 ## Project Layout

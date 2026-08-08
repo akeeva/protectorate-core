@@ -24,7 +24,17 @@
 #==============================================================================
 
 ##
-# Description...
+# Performs the module's documented public operation.
+#
+# Arguments:
+#   $1 - Description of the first argument.
+#
+# Output:
+#   Description of stdout output, if any.
+#
+# Returns:
+#   0 on success.
+#   Non-zero on failure.
 #
 public_function() {
     :
