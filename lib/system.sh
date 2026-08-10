@@ -68,7 +68,7 @@ _system_memory() {
 # Returns the source IP address used for the default network path.
 #
 _system_ip() {
-    ip route get 1.1.1.1 2>/dev/null | 
+    ip route get 1.1.1.1 2>/dev/null |
         awk '/src/ {print $7; exit}'
 }
 
