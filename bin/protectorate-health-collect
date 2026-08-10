@@ -1,0 +1,204 @@
+#!/usr/bin/env bash
+#
+# -----------------------------------------------------------------------------
+# Protectorate Core
+# Component: protectorate-health-collect
+#
+# Description:
+#   Collects Protectorate cluster health information and writes a cached report.
+#
+# Responsibilities:
+#   - Collect health information for the local Protectorate node.
+#   - Produce health records in tab-separated format.
+#   - Replace the health cache atomically after successful collection.
+# -----------------------------------------------------------------------------
+
+set -euo pipefail
+
+#==============================================================================
+# Constants
+#==============================================================================
+
+readonly HEALTH_CACHE_DIR="/var/cache/protectorate"
+readonly HEALTH_CACHE_FILE="$HEALTH_CACHE_DIR/health.tsv"
+
+#==============================================================================
+# Private Functions
+#==============================================================================
+
+_node_label() {
+    local node_name
+
+    node_name="$(hostname -s 2>/dev/null || hostname)"
+    printf '%s\n' "${node_name^}"
+}
+
+_write_health_cache() {
+    local source_file="$1"
+
+    chmod 0644 "$source_file"
+    mv -f -- "$source_file" "$HEALTH_CACHE_FILE"
+}
+
+_emit_health_record() {
+    local status="$1"
+    local label="$2"
+    local detail="$3"
+
+    label="${label//$'\t'/ }"
+    label="${label//$'\n'/ }"
+    detail="${detail//$'\t'/ }"
+    detail="${detail//$'\n'/ }"
+
+    printf '%s\t%s\t%s\n' "$status" "$label" "$detail"
+}
+
+_collect_root_filesystem() {
+    local node_label="$1"
+    local usage
+    local percent
+    local status
+
+    usage="$(df -P / | awk 'NR == 2 {print $5}')"
+    percent="${usage%\%}"
+
+    [[ "$percent" =~ ^[0-9]+$ ]] || return 1
+
+    if ((percent >= 95)); then
+        status="FAIL"
+    elif ((percent >= 85)); then
+        status="WARN"
+    else
+        status="OK"
+    fi
+
+    _emit_health_record \
+        "$status" \
+        "$node_label Disk" \
+        "Root filesystem ${percent}% used"
+}
+
+##
+# Collects aggregate CPU utilization for the local node.
+#
+# Samples /proc/stat twice over a one-second interval and calculates the
+# percentage of non-idle CPU time across all logical processors.
+#
+# Arguments:
+#   $1 - Display label for the local node.
+#
+# Health thresholds:
+#   OK   - Utilization below 85%.
+#   WARN - Utilization from 85% through 94%.
+#   FAIL - Utilization at or above 95%.
+#
+
+_collect_cpu() {
+    local node_label="$1"
+    local cpu_line
+    local user nice system idle iowait irq softirq steal
+    local total_before idle_before
+    local total_after idle_after
+    local total_delta idle_delta
+    local percent
+    local status
+
+    read -r cpu_line user nice system idle iowait irq softirq steal _ < /proc/stat
+    [[ "$cpu_line" == "cpu" ]] || return 1
+
+    idle_before=$((idle + iowait))
+    total_before=$((user + nice + system + idle + iowait + irq + softirq + steal))
+
+    sleep 1
+
+    read -r cpu_line user nice system idle iowait irq softirq steal _ < /proc/stat
+    [[ "$cpu_line" == "cpu" ]] || return 1
+
+    idle_after=$((idle + iowait))
+    total_after=$((user + nice + system + idle + iowait + irq + softirq + steal))
+
+    total_delta=$((total_after - total_before))
+    idle_delta=$((idle_after - idle_before))
+
+    ((total_delta > 0)) || return 1
+
+    percent=$(((100 * (total_delta - idle_delta) + total_delta / 2) / total_delta))
+
+    if ((percent >= 95)); then
+        status="FAIL"
+    elif ((percent >= 85)); then
+        status="WARN"
+    else
+        status="OK"
+    fi
+
+    _emit_health_record \
+        "$status" \
+        "$node_label CPU" \
+        "CPU ${percent}% used"
+}
+
+_collect_memory() {
+    local node_label="$1"
+    local percent
+    local status
+
+    percent="$(
+        free | awk '/^Mem:/ {printf "%.0f", ($3 / $2) * 100}'
+    )"
+
+    [[ "$percent" =~ ^[0-9]+$ ]] || return 1
+
+    if ((percent >= 95)); then
+        status="FAIL"
+    elif ((percent >= 85)); then
+        status="WARN"
+    else
+        status="OK"
+    fi
+
+    _emit_health_record \
+        "$status" \
+        "$node_label Memory" \
+        "Memory ${percent}% used"
+}
+
+_collect_local_health() {
+    local node_label="$1"
+
+    _emit_health_record \
+        "OK" \
+        "$node_label" \
+        "Online"
+}
+
+#==============================================================================
+# Public Functions
+#==============================================================================
+
+main() {
+    local node_label
+    local temp_file
+
+    node_label="$(_node_label)"
+
+    install -d -m 0755 "$HEALTH_CACHE_DIR"
+    temp_file="$(mktemp "$HEALTH_CACHE_DIR/.health.tsv.XXXXXX")"
+
+    if ! {
+        _collect_local_health "$node_label" &&
+        _collect_cpu "$node_label" &&
+        _collect_root_filesystem "$node_label" &&
+        _collect_memory "$node_label"
+    } >"$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+    if ! _write_health_cache "$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+}
+
+main "$@"
