@@ -24,6 +24,8 @@ readonly PROJECT_CODENAME="Foundation"
 readonly ORGANIZATION="The Protectorate"
 readonly DIVISION="Infrastructure Division"
 
-readonly NODE_NAME="$(hostname)"
+NODE_NAME="$(hostname)" || return 1
+
+readonly NODE_NAME
 
 export ASSETS_DIR
