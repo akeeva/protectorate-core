@@ -86,6 +86,19 @@ provided by lib/bootstrap.sh and the shared library modules.
 
 ---
 
+## Compatibility
+
+Protectorate Core is developed and tested natively on Debian 12.
+
+Functionality has also been verified on:
+
+- Debian 13
+- Ubuntu 24.04
+
+The installer is designed to be idempotent and can be rerun safely without duplicating configuration.
+
+---
+
 ## Future Direction
 
 Protectorate Core is the foundation of the Protectorate ecosystem.
