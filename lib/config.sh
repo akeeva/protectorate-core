@@ -19,13 +19,10 @@ readonly ASSETS_DIR="${PROTECTORATE_ROOT}/assets"
 
 readonly PROJECT_NAME="Protectorate Core"
 readonly PROJECT_VERSION="0.1.0"
-readonly PROJECT_CODENAME="Foundation"
 
 readonly ORGANIZATION="The Protectorate"
 readonly DIVISION="Infrastructure Division"
 
-NODE_NAME="$(hostname)" || return 1
 
-readonly NODE_NAME
 
 export ASSETS_DIR
