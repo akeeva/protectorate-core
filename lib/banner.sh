@@ -18,8 +18,6 @@
 #==============================================================================
 readonly BANNER_DIR="${ASSETS_DIR}/banners"
 readonly BANNER_DEFAULT="${BANNER_DIR}/protectorate.ans"
-readonly BANNER_MAINTENANCE="maintenance.ans"
-readonly BANNER_HOLIDAY="holiday.ans"
 
 #==============================================================================
 # Private Functions
