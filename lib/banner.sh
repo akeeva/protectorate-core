@@ -45,7 +45,7 @@ _banner_render() {
         printf 'Error: Unable to read banner file: %s\n' "${banner_file}" >&2
         return 1
     fi
-    
+
     cat "${banner_file}"
 }
 

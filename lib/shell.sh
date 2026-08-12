@@ -73,10 +73,10 @@ protectorate_shell_init() {
             "Protectorate Core: bootstrap module not found: $_PROTECTORATE_BOOTSTRAP" >&2
         return 1
     fi
-    
+
 
     source "$_PROTECTORATE_BOOTSTRAP" || return 1
-    
+
     readonly PROTECTORATE_SHELL_LOADED=1
 }
 

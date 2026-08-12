@@ -57,7 +57,7 @@ _load_module() {
         echo "Missing module: ${module}" >&2
         return 1
     }
-    
+
     source "$file"
 }
 
