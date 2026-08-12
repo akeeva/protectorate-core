@@ -57,6 +57,8 @@ _load_module() {
         return 1
     }
 
+    # Module path is intentionally constructed at runtime.
+    # shellcheck disable=SC1090
     source "$file"
 }
 
@@ -78,6 +80,8 @@ _initialize() {
     local component_config="${PROTECTORATE_ROOT}/config/components.conf"
 
     if [[ -r "$component_config" ]]; then
+        # Component configuration path is determined at runtime.
+        # shellcheck disable=SC1090
         source "$component_config"
     fi
 
