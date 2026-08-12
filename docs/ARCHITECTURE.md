@@ -118,6 +118,46 @@ Project-wide constants and configuration are defined in config.sh
 but must never rediscover the project root themselves.
 
 ---
+## Node Discovery and State
+
+Protectorate Core separates node configuration, discovery, persistent
+registry state, and health data.
+
+```text
+       Administrator Configuration
+                  │
+                  ▼
+              Discovery
+                  │
+                  ▼
+        Persistent Node Registry
+                  │
+                  ▼
+          Health Collection
+                  │
+                  ▼
+            Health Cache
+                  │
+                  ▼
+            Presentation
+
+```
+
+Administrator-defined configuration resides under
+`/etc/protectorate/config`.
+
+Persistent discovered node state resides under
+`/var/lib/protectorate`.
+
+Regenerable health data resides under
+`/var/cache/protectorate`.
+
+Discovery mechanisms populate a common node registry.
+
+Health collection operates against the registry and does not depend
+on the mechanism used to discover a node.
+
+---
 
 Core should remain focused on shared functionality rather than
 absorbing unrelated features.

@@ -127,3 +127,40 @@ Clear public interfaces improve maintainability.
 
 Private implementation details should remain encapsulated within each
 module.
+
+---
+
+## ADR-0006
+
+### Title
+
+Node Discovery and State
+
+### Status
+
+Accepted
+
+### Decision
+
+Separate node configuration, discovery, persistent registry state, and
+health data.
+
+Administrator configuration shall reside under
+`/etc/protectorate/config`.
+
+Persistent node registry state shall reside under
+`/var/lib/protectorate`.
+
+Regenerable health data shall reside under
+`/var/cache/protectorate`.
+
+### Rationale
+
+Protectorate Core must support arbitrary cluster architectures without
+requiring hard-coded node definitions.
+
+Separating configured intent from discovered state allows multiple
+discovery methods to populate a common node registry.
+
+Health collection can then operate against the registry without
+depending on how nodes were discovered.
