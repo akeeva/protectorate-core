@@ -15,6 +15,10 @@
 
 set -euo pipefail
 
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/bootstrap.sh"
+
+_load_module registry
+
 #==============================================================================
 # Constants
 #==============================================================================
@@ -26,11 +30,23 @@ readonly HEALTH_CACHE_FILE="$HEALTH_CACHE_DIR/health.tsv"
 # Private Functions
 #==============================================================================
 
-_node_label() {
-    local node_name
+_local_node_label() {
+    local local_node_id
+    local node_id
+    local name
+    local address
+    local source
 
-    node_name="$(hostname -s 2>/dev/null || hostname)"
-    printf '%s\n' "${node_name^}"
+    local_node_id="$(registry_node_id)" || return 1
+
+    while IFS=$'\t' read -r node_id name address source; do
+        if [[ "$node_id" == "$local_node_id" ]]; then
+            printf '%s\n' "$name"
+            return 0
+        fi
+    done < <(registry_nodes)
+
+    return 1
 }
 
 _write_health_cache() {
@@ -180,7 +196,8 @@ main() {
     local node_label
     local temp_file
 
-    node_label="$(_node_label)"
+    registry_init
+    node_label="$(_local_node_label)"
 
     install -d -m 0755 "$HEALTH_CACHE_DIR"
     temp_file="$(mktemp "$HEALTH_CACHE_DIR/.health.tsv.XXXXXX")"
