@@ -19,6 +19,8 @@
 
 readonly PROTECTORATE_STATE_DIR="/var/lib/protectorate"
 readonly PROTECTORATE_NODE_ID_FILE="${PROTECTORATE_STATE_DIR}/node-id"
+readonly PROTECTORATE_REGISTRY_FILE="${PROTECTORATE_STATE_DIR}/registry.json"
+readonly PROTECTORATE_REGISTRY_VERSION=1
 
 #==============================================================================
 # Private Functions
@@ -36,8 +38,14 @@ readonly PROTECTORATE_NODE_ID_FILE="${PROTECTORATE_STATE_DIR}/node-id"
 #
 _registry_valid_node_id() {
     local node_id="$1"
+    local uuid_regex
 
-    [[ "$node_id" =~ ^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[1-5][[:xdigit:]]{3}-[89abAB][[:xdigit:]]{3}-[[:xdigit:]]{12}$ ]]
+    uuid_regex='^[[:xdigit:]]{8}-[[:xdigit:]]{4}-'
+    uuid_regex+='[1-5][[:xdigit:]]{3}-'
+    uuid_regex+='[89abAB][[:xdigit:]]{3}-'
+    uuid_regex+='[[:xdigit:]]{12}$'
+
+    [[ "$node_id" =~ $uuid_regex ]]
 }
 
 ##
@@ -70,12 +78,148 @@ _registry_ensure_node_id() {
     chmod 0644 "$PROTECTORATE_NODE_ID_FILE"
 }
 
+##
+# Creates the persistent Protectorate node registry when it does not exist.
+#
+# Returns:
+#   0 when the registry exists or is created successfully.
+#   Non-zero on failure.
+#
+_registry_ensure_registry() {
+    local temp_file
+
+    command -v jq >/dev/null 2>&1 || return 1
+
+    [[ -s "$PROTECTORATE_REGISTRY_FILE" ]] && {
+        jq -e \
+            --argjson version "$PROTECTORATE_REGISTRY_VERSION" \
+            '.version == $version and (.nodes | type == "object")' \
+            "$PROTECTORATE_REGISTRY_FILE" >/dev/null
+        return
+    }
+
+    install -d -m 0755 "$PROTECTORATE_STATE_DIR" || return 1
+
+    temp_file="$(mktemp "${PROTECTORATE_STATE_DIR}/.registry.json.XXXXXX")" || return 1
+
+    if ! jq -n \
+        --argjson version "$PROTECTORATE_REGISTRY_VERSION" \
+        '{version: $version, nodes: {}}' > "$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+    if ! chmod 0644 "$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+    if ! mv -f -- "$temp_file" "$PROTECTORATE_REGISTRY_FILE"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+}
+
 #==============================================================================
 # Public Functions
 #==============================================================================
 
 ##
-# Returns the persistent identifier to the local Protectorate node.
+# Initializes persistent Protectorate registry state.
+#
+# Returns:
+#   0 when local node identity and registry state are available.
+#   Non-zero on failure.
+#
+registry_init() {
+    _registry_ensure_node_id || return 1
+    _registry_ensure_registry || return 1
+}
+
+##
+# Registers or updates a Protectorate node.
+#
+# Arguments:
+#   $1 - Persistent node identifier.
+#   $2 - Node name.
+#   $3 - Node address.
+#   $4 - Discovery source.
+#
+# Returns:
+#   0 when the node is registered successfully.
+#   Non-zero on failure.
+#
+registry_register_node() {
+    local node_id="$1"
+    local name="$2"
+    local address="$3"
+    local source="$4"
+    local temp_file
+
+    [[ $# -eq 4 ]] || return 1
+    _registry_valid_node_id "$node_id" || return 1
+    [[ -n "$name" ]] || return 1
+    [[ -n "$address" ]] || return 1
+    [[ -n "$source" ]] || return 1
+
+    _registry_ensure_registry || return 1
+
+    temp_file="$(mktemp \
+        "${PROTECTORATE_STATE_DIR}/.registry.json.XXXXXX")" || return 1
+
+    if ! jq \
+        --arg node_id "$node_id" \
+        --arg name "$name" \
+        --arg address "$address" \
+        --arg source "$source" \
+        '.nodes[$node_id] = {
+            name: $name,
+            address: $address,
+            source: $source
+        }' \
+        "$PROTECTORATE_REGISTRY_FILE" > "$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+    if ! chmod 0644 "$temp_file"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+
+    if ! mv -f -- \
+        "$temp_file" "$PROTECTORATE_REGISTRY_FILE"; then
+        rm -f -- "$temp_file"
+        return 1
+    fi
+}
+
+##
+# Lists registered Protectorate nodes.
+#
+# Output:
+#   Prints one tab-separated node per line:
+#   identifier, name, address, source.
+#
+# Returns:
+#   0 on success.
+#   Non-zero when registry state is unavailable or invalid.
+#
+registry_nodes() {
+    _registry_ensure_registry || return 1
+
+    jq -r '
+        .nodes
+        | to_entries
+        | sort_by(.key)[]
+        | [.key, .value.name, .value.address, .value.source]
+        | @tsv
+    ' "$PROTECTORATE_REGISTRY_FILE"
+}
+
+##
+# Returns the persistent identifier for the local Protectorate node.
 #
 # Output:
 #   Prints the local node identifier to stdout.
