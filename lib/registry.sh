@@ -219,6 +219,43 @@ registry_nodes() {
 }
 
 ##
+# Lists Protectorate nodes assigned a specific role.
+#
+# Arguments:
+#   $1 - Role name.
+#
+# Output:
+#   Prints one tab-separated node per line:
+#   identifier, name, address, source.
+#
+# Returns:
+#   0 on success.
+#   Non-zero when registry state is unavailable or invalid.
+#
+registry_nodes_by_role() {
+    local role="$1"
+
+    [[ $# -eq 1 ]] || return 1
+    [[ -n "$role" ]] || return 1
+
+    _registry_ensure_registry || return 1
+
+    jq -r \
+        --arg role "$role" '
+        .nodes
+        | to_entries
+        | map(
+            select(
+                ((.value.roles // []) | index($role)) != null
+            )
+        )
+        | sort_by(.key)[]
+        | [.key, .value.name, .value.address, .value.source]
+        | @tsv
+    ' "$PROTECTORATE_REGISTRY_FILE"
+}
+
+##
 # Returns the persistent identifier for the local Protectorate node.
 #
 # Output:
