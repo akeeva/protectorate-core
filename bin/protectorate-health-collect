@@ -24,7 +24,7 @@ _load_module registry
 #==============================================================================
 
 readonly HEALTH_CACHE_DIR="/var/cache/protectorate"
-readonly HEALTH_CACHE_FILE="$HEALTH_CACHE_DIR/health.tsv"
+readonly HEALTH_LOCAL_REPORT_FILE="$HEALTH_CACHE_DIR/health-local.tsv"
 
 #==============================================================================
 # Private Functions
@@ -34,7 +34,7 @@ _write_health_cache() {
     local source_file="$1"
 
     chmod 0644 "$source_file"
-    mv -f -- "$source_file" "$HEALTH_CACHE_FILE"
+    mv -f -- "$source_file" "$HEALTH_LOCAL_REPORT_FILE"
 }
 
 _emit_health_record() {
@@ -197,7 +197,7 @@ main() {
     registry_init
 
     install -d -m 0755 "$HEALTH_CACHE_DIR"
-    temp_file="$(mktemp "$HEALTH_CACHE_DIR/.health.tsv.XXXXXX")"
+    temp_file="$(mktemp "$HEALTH_CACHE_DIR/.health-local.tsv.XXXXXX")"
 
     if ! _collect_local_report >"$temp_file"; then
         rm -f -- "$temp_file"
