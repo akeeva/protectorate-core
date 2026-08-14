@@ -256,6 +256,166 @@ registry_nodes_by_role() {
 }
 
 ##
+# Assigns a role to a registered Protectorate node.
+#
+# Arguments:
+#   $1 - Node identifier.
+#   $2 - Role name.
+#
+# Returns:
+#   0 on success.
+#   Non-zero when arguments or registry state are invalid.
+registry_assign_role() {
+    local node_id="$1"
+    local role="$2"
+    local temp_file
+
+    [[ $# -eq 2 ]] || return 1
+    _registry_valid_node_id "$node_id" || return 1
+    [[ -n "$role" ]] || return 1
+
+    _registry_ensure_registry || return 1
+
+    jq -e \
+        --arg node_id "$node_id" \
+        '.nodes[$node_id] != null' \
+        "$PROTECTORATE_REGISTRY_FILE" >/dev/null || return 1
+
+    temp_file=$(mktemp "${PROTECTORATE_REGISTRY_FILE}.XXXXXX") || return 1
+
+    if ! jq \
+        --arg node_id "$node_id" \
+        --arg role "$role" '
+        .nodes[$node_id].roles =
+            (
+                (.nodes[$node_id].roles // [])
+                + [$role]
+                | unique
+            )
+        ' "$PROTECTORATE_REGISTRY_FILE" > "$temp_file"; then
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    chmod 0644 "$temp_file" || {
+        rm -f "$temp_file"
+        return 1
+    }
+
+    mv "$temp_file" "$PROTECTORATE_REGISTRY_FILE"
+}
+
+##
+# Removes a role from a registered Protectorate node.
+#
+# Arguments:
+#   $1 - Node identifier.
+#   $2 - Role name.
+#
+# Returns:
+#   0 on success.
+#   Non-zero when arguments or registry state are invalid.
+#
+registry_remove_role() {
+    local node_id="$1"
+    local role="$2"
+    local temp_file
+
+    [[ $# -eq 2 ]] || return 1
+    _registry_valid_node_id "$node_id" || return 1
+    [[ -n "$role" ]] || return 1
+
+    _registry_ensure_registry || return 1
+
+    jq -e \
+        --arg node_id "$node_id" \
+        '.nodes[$node_id] != null' \
+        "$PROTECTORATE_REGISTRY_FILE" >/dev/null || return 1
+
+    temp_file=$(mktemp "${PROTECTORATE_REGISTRY_FILE}.XXXXXX") || return 1
+
+    if ! jq \
+        --arg node_id "$node_id" \
+        --arg role "$role" '
+        .nodes[$node_id].roles =
+            (
+                (.nodes[$node_id].roles // [])
+                | map(select(. != $role))
+            )
+        ' "$PROTECTORATE_REGISTRY_FILE" > "$temp_file"; then
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    chmod 0644 "$temp_file" || {
+        rm -f "$temp_file"
+        return 1
+    }
+
+    mv "$temp_file" "$PROTECTORATE_REGISTRY_FILE"
+}
+
+##
+# Assigns a role exclusively to one Protectorate node.
+#
+# The role is removed from all other nodes before being assigned
+# to the requested node.
+#
+# Arguments:
+#   $1 - Node identifier.
+#   $2 - Role name
+#
+# Returns:
+#   0 on success.
+#   Non-zero when arguments or registry state are invalid.
+#
+registry_assign_unique_role() {
+    local node_id=$1
+    local role=$2
+    local temp_file
+
+    [[ $# -eq 2 ]] || return 1
+    _registry_valid_node_id "$node_id" || return 1
+    [[ -n "$role" ]] || return 1
+
+    _registry_ensure_registry || return 1
+
+    jq -e \
+        --arg node_id "$node_id" \
+        '.nodes[$node_id] != null' \
+        "$PROTECTORATE_REGISTRY_FILE" >/dev/null || return 1
+
+    temp_file=$(mktemp "${PROTECTORATE_REGISTRY_FILE}.XXXXXX") || return 1
+
+    if ! jq -e \
+        --arg node_id "$node_id" \
+        --arg role "$role" '
+        .nodes |= with_entries(
+            .value.roles =
+                (
+                    (.value.roles // [])
+                    | map(select(. != $role))
+                )
+        )
+        |
+        .nodes[$node_id].roles =
+            (
+                ((.nodes[$node_id].roles // []) + [$role])
+                | unique
+            )        ' "$PROTECTORATE_REGISTRY_FILE" > "$temp_file"; then
+        rm -f "$temp_file"
+        return 1
+    fi
+
+    chmod 0644 "$temp_file" || {
+        rm -f "$temp_file"
+        return 1
+    }
+
+    mv "$temp_file" "$PROTECTORATE_REGISTRY_FILE"
+}
+
+##
 # Returns the persistent identifier for the local Protectorate node.
 #
 # Output:
