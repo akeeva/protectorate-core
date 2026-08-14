@@ -5,7 +5,7 @@
 # Component: protectorate-health-collect
 #
 # Description:
-#   Collects Protectorate cluster health information and writes a cached report.
+#   Collects local Protectorate node health information and writes a cached report.
 #
 # Responsibilities:
 #   - Collect health information for the local Protectorate node.
@@ -30,25 +30,6 @@ readonly HEALTH_CACHE_FILE="$HEALTH_CACHE_DIR/health.tsv"
 # Private Functions
 #==============================================================================
 
-_local_node_label() {
-    local local_node_id
-    local node_id
-    local name
-    local address
-    local source
-
-    local_node_id="$(registry_node_id)" || return 1
-
-    while IFS=$'\t' read -r node_id name address source; do
-        if [[ "$node_id" == "$local_node_id" ]]; then
-            printf '%s\n' "$name"
-            return 0
-        fi
-    done < <(registry_nodes)
-
-    return 1
-}
-
 _write_health_cache() {
     local source_file="$1"
 
@@ -58,19 +39,22 @@ _write_health_cache() {
 
 _emit_health_record() {
     local status="$1"
-    local label="$2"
-    local detail="$3"
+    local node_id="$2"
+    local label="$3"
+    local detail="$4"
 
+    node_id="${node_id//$'\t'/ }"
+    node_id="${node_id//$'\n'/ }"
     label="${label//$'\t'/ }"
     label="${label//$'\n'/ }"
     detail="${detail//$'\t'/ }"
     detail="${detail//$'\n'/ }"
 
-    printf '%s\t%s\t%s\n' "$status" "$label" "$detail"
+    printf '%s\t%s\t%s\t%s\n' "$status" "$node_id" "$label" "$detail"
 }
 
 _collect_root_filesystem() {
-    local node_label="$1"
+    local node_id="$1"
     local usage
     local percent
     local status
@@ -90,7 +74,8 @@ _collect_root_filesystem() {
 
     _emit_health_record \
         "$status" \
-        "$node_label Disk" \
+        "$node_id" \
+        "Disk" \
         "Root filesystem ${percent}% used"
 }
 
@@ -110,7 +95,7 @@ _collect_root_filesystem() {
 #
 
 _collect_cpu() {
-    local node_label="$1"
+    local node_id="$1"
     local cpu_line
     local user nice system idle iowait irq softirq steal
     local total_before idle_before
@@ -150,12 +135,13 @@ _collect_cpu() {
 
     _emit_health_record \
         "$status" \
-        "$node_label CPU" \
-        "CPU ${percent}% used"
+        "$node_id" \
+        "CPU" \
+        "${percent}% used"
 }
 
 _collect_memory() {
-    local node_label="$1"
+    local node_id="$1"
     local percent
     local status
 
@@ -175,17 +161,30 @@ _collect_memory() {
 
     _emit_health_record \
         "$status" \
-        "$node_label Memory" \
-        "Memory ${percent}% used"
+        "$node_id" \
+        "Memory" \
+        "${percent}% used"
 }
 
 _collect_local_health() {
-    local node_label="$1"
+    local node_id="$1"
 
     _emit_health_record \
         "OK" \
-        "$node_label" \
+        "$node_id" \
+        "Node" \
         "Online"
+}
+
+_collect_local_report() {
+    local node_id
+
+    node_id="$(registry_node_id)" || return 1
+
+    _collect_local_health "$node_id" &&
+    _collect_cpu "$node_id" &&
+    _collect_root_filesystem "$node_id" &&
+    _collect_memory "$node_id"
 }
 
 #==============================================================================
@@ -193,21 +192,14 @@ _collect_local_health() {
 #==============================================================================
 
 main() {
-    local node_label
     local temp_file
 
     registry_init
-    node_label="$(_local_node_label)"
 
     install -d -m 0755 "$HEALTH_CACHE_DIR"
     temp_file="$(mktemp "$HEALTH_CACHE_DIR/.health.tsv.XXXXXX")"
 
-    if ! {
-        _collect_local_health "$node_label" &&
-        _collect_cpu "$node_label" &&
-        _collect_root_filesystem "$node_label" &&
-        _collect_memory "$node_label"
-    } >"$temp_file"; then
+    if ! _collect_local_report >"$temp_file"; then
         rm -f -- "$temp_file"
         return 1
     fi
