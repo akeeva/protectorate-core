@@ -1,0 +1,202 @@
+#!/usr/bin/env python3
+
+#
+# -----------------------------------------------------------------------------
+# Protectorate Core
+# Component: Health Receiver
+#
+# Description:
+# Receives node health reports on the designated Health supervisor.
+#
+# Responsibilities:
+#   - Listen for incoming Health publication requests.
+#   - Validate submitted node health reports.
+#   - Store accepted node reports atomically.
+# -----------------------------------------------------------------------------
+#
+
+
+import json
+import logging
+import os
+import re
+import sys
+import tempfile
+from http.server import BaseHTTPRequestHandler, HTTPServer
+
+HEALTH_REPORT_DIR = "/var/cache/protectorate/health/reports"
+PROTECTORATE_REGISTRY_FILE = "/var/lib/protectorate/registry.json"
+PROTECTORATE_REGISTRY_VERSION = 1
+HEALTH_LISTEN_ADDRESS = "0.0.0.0"
+HEALTH_LISTEN_PORT = 45820
+HEALTH_MAX_REPORT_SIZE = 64 * 1024
+
+NODE_ID_PATTERN = re.compile(
+    r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-"
+    r"[1-5][0-9a-fA-F]{3}-"
+    r"[89abAB][0-9a-fA-F]{3}-"
+    r"[0-9a-fA-F]{12}$"
+)
+
+logger = logging.getLogger("protectorate.health.receiver")
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s %(name)s: %(message)s",
+)
+
+def registry_contains_node(node_id):
+    """Return whether a node identifier exists in the Protectorate Registry."""
+
+    with open(PROTECTORATE_REGISTRY_FILE, "r", encoding="utf-8") as registry_file:
+        registry = json.load(registry_file)
+
+    if registry.get("version") != PROTECTORATE_REGISTRY_VERSION:
+        raise ValueError("Unsupported Registry version")
+
+    nodes = registry.get("nodes")
+
+    if not isinstance(nodes, dict):
+        raise ValueError("Invalid Registry node map")
+
+    return node_id in nodes
+
+def store_report(node_id, report):
+    """Store an accepted Health report atomically."""
+
+    report_path = os.path.join(
+        HEALTH_REPORT_DIR,
+        f"{node_id}.tsv",
+    )
+
+    with tempfile.NamedTemporaryFile(
+        dir=HEALTH_REPORT_DIR,
+        prefix=f".{node_id}.",
+        delete=False,
+    ) as temp_file:
+        temp_path = temp_file.name
+        temp_file.write(report)
+        temp_file.flush()
+        os.fsync(temp_file.fileno())
+
+    os.chmod(temp_path, 0o644)
+    os.replace(temp_path, report_path)
+
+def validate_report(report):
+    """Validate the basic structure of a Health Report."""
+
+    try:
+        text = report.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+
+    report_node_id = None
+
+    for line in text.splitlines():
+        fields = line.split("\t")
+
+        if len(fields) != 4:
+            return None
+
+        status, node_id, label, detail = fields
+
+        if status not in {"OK", "WARN", "FAIL"}:
+            return None
+
+        if not NODE_ID_PATTERN.fullmatch(node_id):
+            return None
+
+        if report_node_id is None:
+            report_node_id = node_id
+        elif node_id != report_node_id:
+            return None
+
+    return report_node_id
+
+class HealthRequestHandler(BaseHTTPRequestHandler):
+    """Handle incoming Protectorate Health requests."""
+
+    def do_GET(self):
+        self.send_error(405, "Method Not Allowed")
+
+    def log_message(self, format, *args):
+        logger.info(
+            "%s - %s",
+            self.client_address[0],
+            format % args,
+        )
+
+    def do_POST(self):
+        if self.path != "/health":
+            self.send_error(404, "Not Found")
+            return
+
+        content_length = self.headers.get("Content-Length")
+
+        if content_length is None:
+            self.send_error(411, "Length Required")
+            return
+
+        try:
+            content_length = int(content_length)
+        except ValueError:
+            self.send_error(400, "Invalid Content-Length")
+            return
+
+        if content_length < 0:
+            self.send_error(400, "Invalid Content-Length")
+            return
+
+        if content_length > HEALTH_MAX_REPORT_SIZE:
+            self.send_error(413, "Content Too Large")
+            return
+
+        report = self.rfile.read(content_length)
+
+        if len(report) != content_length:
+            self.send_error(400, "Incomplete Health Report")
+            return
+
+        if not report:
+            self.send_error(400, "Empty Health Report")
+            return
+
+        node_id = validate_report(report)
+
+        if node_id is None:
+            self.send_error(400, "Invalid Health Report")
+            return
+
+        try:
+            registered = registry_contains_node(node_id)
+        except (OSError, json.JSONDecodeError, ValueError):
+            logger.exception("Unable to validate node against Registry")
+            self.send_error(503, "Registry Unavailable")
+            return
+
+        if not registered:
+            self.send_error(403, "Unregistered Protectorate node")
+            return
+
+        try:
+            store_report(node_id, report)
+        except OSError:
+            logger.exception("Unable to store Health Report")
+            self.send_error(503, "Health Storage Unavailable")
+            return
+
+        self.send_response(204)
+        self.end_headers()
+
+def main():
+    server = HTTPServer(
+        (HEALTH_LISTEN_ADDRESS, HEALTH_LISTEN_PORT),
+        HealthRequestHandler
+    )
+
+    server.serve_forever()
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

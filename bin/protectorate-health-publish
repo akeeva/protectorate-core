@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+
+set -u
+set -o pipefail
+
+readonly HEALTH_LOCAL_REPORT_FILE="/var/cache/protectorate/health-local.tsv"
+readonly HEALTH_SUPERVISOR_ROLE="supervisor"
+readonly HEALTH_RECEIVER_PORT=45820
+
+. "${PROTECTORATE_ROOT}/lib/registry.sh" || exit 1
+
+main() {
+    local supervisor
+    local node_id
+    local name
+    local address
+    local source
+    local http_code
+
+    [[ -r "$HEALTH_LOCAL_REPORT_FILE" ]] || {
+        echo "Health report unavailable" >&2
+        return 1
+    }
+
+    supervisor="$(registry_nodes_by_role "$HEALTH_SUPERVISOR_ROLE")" || {
+        echo "Unable to resolve Health supervisor" >&2
+        return 1
+    }
+
+    [[ -n "$supervisor" ]] || {
+        echo "No Health supervisor registered" >&2
+        return 1
+    }
+
+    [[ $(printf '%s\n' "$supervisor" | wc -l) -eq 1 ]] || {
+        echo "Multiple Health supervisors registered" >&2
+        return 1
+    }
+
+    IFS=$'\t' read -r node_id name address sourc <<< "$supervisor"
+
+    [[ -n "$address" ]] || {
+        echo "Health supervisor has no address" >&2
+        return 1
+    }
+
+    http_code="$(
+        curl \
+            --silent \
+            --show-error \
+            --output /dev/null \
+            --write-out '%{http_code}' \
+            --data-binary "@${HEALTH_LOCAL_REPORT_FILE}" \
+            "http://${address}:${HEALTH_RECEIVER_PORT}/health"
+        )" || return 1
+
+    [[ "$http_code" == "204" ]] || {
+        echo "Health publication failed: HTTP ${http_code}" >&2
+        return 1
+    }
+}
+
+main "$@"

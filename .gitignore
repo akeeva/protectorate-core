@@ -23,3 +23,11 @@
 # Generated artifacts
 dist/
 build/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Python
+__pycache__/
+*.py[cod]

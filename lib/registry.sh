@@ -416,6 +416,31 @@ registry_assign_unique_role() {
 }
 
 ##
+# Determines whether a node is present in the Protectorate Registry.
+#
+# Arguments:
+#   $1 - Node identifier.
+#
+# Returns:
+#   0 if the node is registered.
+#   1 otherwise.
+#
+registry_node_exists() {
+    [[ $# -eq 1 ]] || return 1
+
+    local node_id="$1"
+
+    _registry_valid_node_id "$node_id" || return 1
+    _registry_ensure_registry || return 1
+
+    jq -e \
+        --arg node_id "$node_id" \
+        '.nodes | has($node_id)' \
+        "$PROTECTORATE_REGISTRY_FILE" \
+        >/dev/null
+}
+
+##
 # Returns the persistent identifier for the local Protectorate node.
 #
 # Output:
